@@ -1,0 +1,27 @@
+# Rust build artifacts
+/target/
+
+# Coverage / profiling
+*.profraw
+
+# Whisper model files (downloaded, large)
+*.bin
+*.gguf
+models/
+
+# Recorded audio scratch
+*.wav
+
+# macOS
+.DS_Store
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Env / local secrets
+.env
+.env.local
