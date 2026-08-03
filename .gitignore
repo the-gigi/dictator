@@ -1,5 +1,5 @@
-# Rust build artifacts
-/target/
+# Rust build artifacts (unanchored: also catches stray per-crate target dirs)
+target/
 
 # Coverage / profiling
 *.profraw

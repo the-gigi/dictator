@@ -1,7 +1,35 @@
-[package]
-name = "dictator"
+[workspace]
+members = ["packages/*"]
+# So a bare `cargo run` at the root picks the app instead of erroring on ambiguity.
+default-members = ["packages/dictator"]
+# Virtual manifests do not inherit an edition, so the resolver version must be
+# stated explicitly or cargo falls back to "1" and warns.
+resolver = "3"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
-publish = ["crates-io"]
+publish = false
 
-[dependencies]
+[workspace.dependencies]
+# Directory name, package name, and crate name are identical for every member.
+# Underscores rather than hyphens so cargo never has to rewrite the name on the
+# way into Rust source.
+object_model = { path = "packages/object_model" }
+engine = { path = "packages/engine" }
+platform = { path = "packages/platform" }
+
+rdev = "0.5.3"                                            # raw key up/down listener (right-Option hold)
+cpal = "0.18.1"                                           # cross-platform mic capture
+hound = "3.5.1"                                           # WAV read/write (debug dumps of captured audio)
+whisper-rs = { version = "0.16.0", features = ["metal"] } # local STT, GPU on Apple Silicon
+enigo = "0.6.1"                                           # synthetic keystroke injection (default path)
+arboard = "3.6.1"                                         # clipboard (Cmd+V fallback path)
+thiserror = "2"                                           # typed errors for the libraries
+anyhow = "1.0.104"                                        # ergonomic error handling for the binary
+
+[workspace.lints.clippy]
+# Pick one module layout and enforce it. Clippy ships this and its opposite
+# (`self_named_module_files`) as mutually exclusive restriction lints, both off
+# by default, so the only real rule is to be internally consistent.
+mod_module_files = "warn"

@@ -1,0 +1,16 @@
+[package]
+name = "object_model"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[features]
+# Exposes the test doubles in `fakes` to other packages. Not `#[cfg(test)]`,
+# which is invisible outside this crate's own unit tests.
+fakes = []
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true
