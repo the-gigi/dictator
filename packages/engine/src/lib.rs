@@ -4,28 +4,32 @@
 //! or a whisper.cpp build. Sibling to `platform` — neither knows about the
 //! other; the binary wires them together.
 
+use std::sync::Arc;
 use object_model::event::DictatorEvents;
+use object_model::Recorder;
 
 pub struct Engine {
-        
+    recorder: Arc<dyn Recorder>
 }
 
 impl Engine {
-    pub fn new() -> Engine {
-        
-        Engine {
-            
-        }
+    pub fn new(recorder: Arc<dyn Recorder>) -> Engine {
+        let engine = Engine {
+            recorder,
+        };
+        engine
     }
 }
 
 impl DictatorEvents for Engine {
     fn on_start(&self) {
-        println!("engine_start");
+        println!("engine: start");
+        self.recorder.record();
     }
 
     fn on_stop(&self) {
-        println!("engine_stop");
+        println!("engine: stop");
+        self.recorder.stop();
     }
 
     fn on_samples(&self, samples: &[f32]) {

@@ -9,6 +9,8 @@
 //! The four traits below are the ports: `platform` implements them, `engine`
 //! consumes them, and `dictator` wires the two together.
 
+use crate::error::DictatorError;
+
 pub mod config;
 pub mod error;
 pub mod event;
@@ -25,4 +27,7 @@ pub mod fakes;
 // Transcriber   - turns one completed utterance into text
 // Injector      - delivers text to the focused window
 
-
+pub trait Recorder: Send + Sync {
+    fn record(&self) -> Option<DictatorError>;
+    fn stop(&self);
+}

@@ -6,6 +6,7 @@ publish.workspace = true
 
 [dependencies]
 object_model.workspace = true
+platform.workspace = true
 
 [lints]
 workspace = true
