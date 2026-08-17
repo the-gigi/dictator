@@ -11,7 +11,7 @@ Early skeleton. Being built live as the companion project to a blog post on The 
 ## Planned pipeline
 
 - Hold-to-talk on **right Option** (`rdev`)
-- Mic capture (`cpal` + `hound`)
+- Mic capture ([`cpal`](https://docs.rs/cpal/) + `hound`)
 - Local speech-to-text (`whisper-rs`, `metal` feature, `ggml-large-v3-turbo`)
 - Inject into the focused window (`enigo` typing by default, `arboard` + synthetic Cmd+V as fallback)
 
@@ -98,13 +98,25 @@ is deferred until this stops being a demo.
 `rdev`'s listener and macOS global input taps both require a CFRunLoop on the main thread, which
 fixes the threading shape:
 
-- **Main thread** — owns the input tap. Translates right-Option down/up into `Start` / `Stop`
-  messages on an `mpsc` channel. Does no work that can block.
-- **Worker thread** — owns the resident `WhisperContext`, the `cpal` capture stream, and the
-  injector. Records, detects pause boundaries, transcribes each completed phrase, types it.
+- **Main thread** — owns the input tap. Right-Option down/up drives `on_start` / `on_stop`, which
+  start and stop capture *inline*: `build_input_stream` plus `play()` return in milliseconds and
+  cpal spawns its own threads, so there's nothing worth handing off. `on_stop` also ships the
+  completed take to the worker. Does no work that can block.
+- **CoreAudio thread** — cpal's own. Its data callback writes samples into the ring buffer.
+- **Worker thread** — owns the resident `WhisperContext` and the injector. Detects pause
+  boundaries, transcribes each completed phrase, types it.
 
-Keeping the STT work off the main thread matters: a blocked run loop means missed key events, so a
-slow transcription would silently swallow the next keypress.
+Only transcription is worth a thread of its own; capture control isn't. The `cpal::Stream` handle
+therefore lives in `platform`'s capture adapter behind a `Mutex<Option<Stream>>`, since the trait
+methods take `&self`. That `Option` doubles as the already-capturing guard, which matters because
+`rdev` can emit a second `KeyPress` with no release between (see the flags-bitmask seam above) —
+`start` and `stop` both have to be idempotent.
+
+Keeping STT off the main thread isn't only about latency. macOS disables an event tap whose callback
+overruns, notifying via `kCGEventTapDisabledByTimeout`, and `rdev` 0.5.3 handles neither half of
+that: `convert()` has no arm for the notification, and `CGEventTapEnable` is called exactly once at
+startup. An overrun doesn't swallow one keypress — it kills the hotkey for the rest of the process,
+silently, while `listen()` keeps spinning and never returns an error.
 
 ## Testing grounds
 

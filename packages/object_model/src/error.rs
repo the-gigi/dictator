@@ -8,3 +8,13 @@
 //! variants, applications flatten. `anyhow` belongs to `dictator` alone.
 //!
 //! Holds: `Error`, `Result<T>`.
+
+#[derive(Debug, thiserror::Error)]
+pub enum DictatorError {
+    #[error("keyboard listener failed: {0}")]
+    KeyListener(String),
+    #[error("audio capture failed: {0}")]
+    AudioCapture(String)
+}
+
+pub type Result<T> = std::result::Result<T, DictatorError>;

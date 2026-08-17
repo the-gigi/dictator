@@ -6,11 +6,16 @@
 
 use object_model::event::DictatorEvents;
 
-pub struct Engine {}
+pub struct Engine {
+        
+}
 
 impl Engine {
     pub fn new() -> Engine {
-        Engine {}
+        
+        Engine {
+            
+        }
     }
 }
 

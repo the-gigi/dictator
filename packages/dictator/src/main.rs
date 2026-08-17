@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use engine::Engine;
-use platform::DictationGate;
+use platform::dictator_gate::DictationGate;
 
 fn main() {
     // create the platform's TriggerSource
