@@ -5,16 +5,19 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use object_model::error::DictatorError;
 use object_model::event::DictatorEvents;
 use object_model::Recorder;
+use rtrb::{Producer};
 
 pub struct AudioCapture {
     sink: Mutex<Option<Arc<dyn DictatorEvents>>>,
-    stream: Mutex<Option<cpal::Stream>>
+    stream: Mutex<Option<cpal::Stream>>,
+    producer: Arc<Mutex<Producer<f32>>>
 }
 
-pub fn new() -> AudioCapture {
+pub fn new(producer: Producer<f32>) -> AudioCapture {
     AudioCapture {
         sink: Mutex::new(None),
-        stream: Mutex::new(None)
+        stream: Mutex::new(None),
+        producer: Arc::from(Mutex::new(producer))
     }
 }
 
@@ -34,12 +37,16 @@ impl Recorder for AudioCapture {
         let supported = device.default_input_config()
             .map_err(|_| DictatorError::AudioCapture("no default input config available".into()));
         let config: StreamConfig = supported.unwrap().config();
-        let sink1 = self.sink.lock().unwrap().clone().unwrap();
-        let sink2 = self.sink.lock().unwrap().clone().unwrap();
+        let producer = Arc::clone(&self.producer);
+        let sink = self.sink.lock().unwrap().clone().unwrap();
         match device.build_input_stream(
             config,
-            move |data: &[f32], _: &cpal::InputCallbackInfo| sink1.on_samples(data),
-            move |err: Error| sink2.on_capture_error(err.message().unwrap()),
+            move |data: &[f32], _: &cpal::InputCallbackInfo| {
+                if let Ok(mut p) = producer.try_lock() {
+                    let _ = p.push_entire_slice(data);
+                }
+            },
+            move |err: Error| sink.on_capture_error(err.message().unwrap()),
             None) {
                 Ok(stream) => {
                     stream.play().unwrap();

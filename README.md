@@ -53,14 +53,19 @@ reaching for [`earshot`](https://lib.rs/crates/earshot) only if that proves flak
 allocate, lock, or block — the driver gives them a fixed deadline, and missing it produces dropouts.
 `std::sync::mpsc` allocates internally and isn't documented as real-time-safe, so captured frames go
 through a lock-free single-producer/single-consumer ring buffer instead
-([`rtrb`](https://docs.rs/rtrb/) or [`ringbuf`](https://docs.rs/ringbuf/)): the cpal callback writes
-into preallocated memory and never touches the allocator.
+([`rtrb`](https://docs.rs/rtrb/)): the cpal callback writes into preallocated memory and never
+touches the allocator.
 
 Two consequences worth stating up front. First, audio bypasses the `DictatorEvents` callback trait
-entirely — `rtrb`'s producer needs `&mut self` and isn't `Sync`, so routing samples through a
-`&self` callback would require a `Mutex` and defeat the point. The callback owns the producer
-directly, and the trait carries only control events (start, stop, capture error), which happen a few
-times a minute and can allocate freely.
+entirely. `dictator` creates one ring at startup, sized for the longest stretch the worker can go
+without draining (a transcription), and hands the `Producer` to `platform`'s capture adapter and the
+`Consumer` to `engine`. The producer needs `&mut self` and isn't `Sync`, so the adapter keeps it in
+an `Arc<Mutex<Producer<f32>>>`, and each take's data callback holds an `Arc` clone and pushes under
+`try_lock`. `try_lock` never blocks, and nothing else ever locks that mutex, so it always succeeds.
+It costs one atomic per callback, which is real-time-safe in a way a blocking `lock` isn't. Dropping
+the stream on `stop` drops only the clone, so the same producer serves every take. The trait carries
+only control events (start, stop, capture error), which happen a few times a minute and can allocate
+freely.
 
 Second, the engine has two inputs and can't block on both, since std has no stable `select`. So it
 blocks on the control channel while idle — zero CPU when nobody is dictating — and switches to
