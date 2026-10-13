@@ -7,11 +7,10 @@ publish.workspace = true
 [dependencies]
 object_model.workspace = true
 
-arboard.workspace = true
+
 cpal.workspace = true
-enigo.workspace = true
 rdev.workspace = true
-whisper-rs.workspace = true
+rtrb.workspace = true
 
 [lints]
 workspace = true

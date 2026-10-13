@@ -17,20 +17,24 @@
 //! | Callback            | Fired from                                  |
 //! |---------------------|---------------------------------------------|
 //! | `on_start`/`on_stop`| the main thread, inside the CFRunLoop       |
-//! | `on_samples`        | cpal's audio callback, real-time priority   |
 //! | `on_capture_error`  | cpal's error callback                       |
 //!
 //! So `Engine` must never implement this trait directly. Doing real work in
-//! `on_start` would block the run loop and drop key events; doing it in
-//! `on_samples` would run segmentation and a GPU transcription inside a
-//! real-time audio callback, starving the driver and causing dropouts. The only
+//! `on_start` would block the run loop and drop key events. The only
 //! implementor forwards across a thread boundary and returns immediately.
+//!
+//! # Why audio isn't here
+//!
+//! Samples never pass through this trait. cpal's data callback runs on a
+//! real-time thread that must not allocate or block, so it pushes straight into
+//! an `rtrb` ring buffer and the engine's worker drains the other end. This
+//! trait carries only control events, which are rare and can allocate freely.
 //!
 //! # Why `&self` rather than `&mut self`
 //!
-//! The main thread and the audio thread hold the sink concurrently, so the
+//! The main thread and cpal's error callback hold the sink concurrently, so the
 //! methods take `&self` and a single `Arc<dyn DictatorEvents>` is shared by both
-//! producers. `Sender<T>` is `Sync` in current Rust, so the forwarding
+//! callers. `Sender<T>` is `Sync` in current Rust, so the forwarding
 //! implementation needs no lock.
 //!
 //! Holds: `DictatorEvents`.
@@ -38,6 +42,5 @@
 pub trait DictatorEvents: Send + Sync {
     fn on_start(&self);
     fn on_stop(&self);
-    fn on_samples(&self, samples: &[f32]);
     fn on_capture_error(&self, message: &str);
 }

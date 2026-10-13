@@ -27,6 +27,7 @@ enigo = "0.6.1"                                           # synthetic keystroke 
 arboard = "3.6.1"                                         # clipboard (Cmd+V fallback path)
 thiserror = "2"                                           # typed errors for the libraries
 anyhow = "1.0.104"                                        # ergonomic error handling for the binary
+rtrb = "0.4.0"
 
 [workspace.lints.clippy]
 # Pick one module layout and enforce it. Clippy ships this and its opposite
