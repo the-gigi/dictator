@@ -30,4 +30,6 @@ pub mod fakes;
 pub trait Recorder: Send + Sync {
     fn record(&self) -> Option<DictatorError>;
     fn stop(&self);
+    fn sample_rate(&self) -> u32;
+    fn channel_count(&self) -> u16;
 }

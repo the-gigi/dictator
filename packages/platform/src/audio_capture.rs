@@ -1,5 +1,5 @@
 use std::sync::{Mutex, Arc};
-use cpal::{Error, StreamConfig};
+use cpal::{Device, Error, StreamConfig, SupportedStreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use object_model::error::DictatorError;
@@ -10,14 +10,22 @@ use rtrb::{Producer};
 pub struct AudioCapture {
     sink: Mutex<Option<Arc<dyn DictatorEvents>>>,
     stream: Mutex<Option<cpal::Stream>>,
-    producer: Arc<Mutex<Producer<f32>>>
+    producer: Arc<Mutex<Producer<f32>>>,
+    device: Device,
+    config: SupportedStreamConfig
 }
 
 pub fn new(producer: Producer<f32>) -> AudioCapture {
+    let host = cpal::default_host();
+    let device = host.default_input_device().unwrap();
+    let config = device.default_input_config().unwrap();
+
     AudioCapture {
         sink: Mutex::new(None),
         stream: Mutex::new(None),
-        producer: Arc::from(Mutex::new(producer))
+        producer: Arc::from(Mutex::new(producer)),
+        device,
+        config
     }
 }
 
@@ -30,16 +38,11 @@ impl AudioCapture {
 
 impl Recorder for AudioCapture {
     fn record(&self) -> Option<DictatorError> {
-        let host = cpal::default_host();
-        let device_wrapper = host.default_input_device()
-            .ok_or_else(|| DictatorError::AudioCapture("no input device".into()));
-        let device = device_wrapper.unwrap();
-        let supported = device.default_input_config()
-            .map_err(|_| DictatorError::AudioCapture("no default input config available".into()));
-        let config: StreamConfig = supported.unwrap().config();
+
+        let config: StreamConfig = self.config.into();
         let producer = Arc::clone(&self.producer);
         let sink = self.sink.lock().unwrap().clone().unwrap();
-        match device.build_input_stream(
+        match self.device.build_input_stream(
             config,
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
                 if let Ok(mut p) = producer.try_lock() {
@@ -61,5 +64,13 @@ impl Recorder for AudioCapture {
 
     fn stop(&self) {
         drop(self.stream.lock().unwrap().take());
+    }
+
+    fn sample_rate(&self) -> u32 {
+        self.config.sample_rate()
+    }
+
+    fn channel_count(&self) -> u16 {
+        self.config.channels()
     }
 }

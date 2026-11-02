@@ -56,7 +56,7 @@ impl Segmenter {
         (sum_of_squares / samples.len() as f32).sqrt() < self.threshold
     }
 
-    fn handle_frame(&mut self, samples: &[f32]) -> Option<Vec<f32>> {
+    pub fn handle_frame(&mut self, samples: &[f32]) -> Option<Vec<f32>> {
         assert_eq!(samples.len(), self.frame_len);
         self.speech.extend_from_slice(samples);
 
@@ -96,6 +96,10 @@ impl Segmenter {
         self.quiet_suffix_count = 0;
 
         result
+    }
+
+    pub fn flush(&mut self) -> Vec<f32> {
+        std::mem::take(&mut self.speech)
     }
 }
 

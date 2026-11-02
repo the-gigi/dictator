@@ -14,7 +14,8 @@ fn main() {
     // create the platform's TriggerSource
     let ring_slots = RING_SPAN.as_secs() as usize * SAMPLE_RATE_HZ as usize * CHANNELS as usize;
     let (producer, consumer) = RingBuffer::new(ring_slots);
-    let recorder = Arc::new(audio_capture::new(producer));
+    let recorder = audio_capture::new(producer);
+    let recorder = Arc::new(recorder);
     let engine = Engine::new(recorder.clone(), consumer);
     recorder.attach_sink(engine.clone());
     let dictation_gate = DictationGate::new(engine.clone());
