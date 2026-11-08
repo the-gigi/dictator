@@ -7,10 +7,10 @@ publish.workspace = true
 [dependencies]
 object_model.workspace = true
 
-
 cpal.workspace = true
 rdev.workspace = true
 rtrb.workspace = true
+whisper-rs.workspace = true
 
 [lints]
 workspace = true

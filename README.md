@@ -45,9 +45,18 @@ strategy without touching the injection layer.
 
 Note that `whisper-rs`'s own VAD support (`FullParams::enable_vad`) is *not* a substitute: it trims
 silence inside a `full()` call, so it can't tell you when to make the call in the first place.
-Segmentation VAD has to sit upstream, on the capture side. Starting with a plain RMS energy
-threshold plus a hangover window — the same approach `whisper.cpp`'s `stream` example takes — and
-reaching for [`earshot`](https://lib.rs/crates/earshot) only if that proves flaky.
+Segmentation VAD has to sit upstream, on the capture side. It's a plain RMS energy threshold plus a
+hangover window, the same approach `whisper.cpp`'s `stream` example takes. With a tuned threshold
+(`THRESHOLD` in `engine`) it works well in a quiet office: close-mic speech sits far above the
+background, which is exactly the case energy thresholding handles. It's tuned to that mic and that
+room, though, and a steady noise source like a fan reads as speech.
+
+`whisper-rs` also ships a standalone neural VAD, `WhisperVadContext` (whisper.cpp's port of Silero
+VAD, with its own model file; see `examples/vad.rs`). It's the stronger speech/noise classifier, but
+it's batch-shaped: `segments_from_samples` takes a complete buffer and reports segments afterwards,
+so it can't decide *live* that a phrase just ended. If noisier rooms ever matter, the upgrade is to
+keep the streaming `Segmenter` and swap only its per-frame quiet/loud decision for a learned one —
+[`earshot`](https://lib.rs/crates/earshot), or Silero — rather than replace the segmentation.
 
 **Audio transport: lock-free ring buffer, not a channel.** Real-time audio callbacks must not
 allocate, lock, or block — the driver gives them a fixed deadline, and missing it produces dropouts.

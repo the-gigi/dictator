@@ -14,7 +14,9 @@ pub enum DictatorError {
     #[error("keyboard listener failed: {0}")]
     KeyListener(String),
     #[error("audio capture failed: {0}")]
-    AudioCapture(String)
+    AudioCapture(String),
+    #[error("audio transcription failed: {0}")]
+    Transcription(String)
 }
 
 pub type Result<T> = std::result::Result<T, DictatorError>;

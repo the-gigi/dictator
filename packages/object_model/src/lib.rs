@@ -33,3 +33,7 @@ pub trait Recorder: Send + Sync {
     fn sample_rate(&self) -> u32;
     fn channel_count(&self) -> u16;
 }
+
+pub trait Transcriber: Send + Sync {
+    fn transcribe(&self, segment: &[f32]) -> Result<String, DictatorError>;
+}

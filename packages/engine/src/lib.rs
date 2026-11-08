@@ -10,7 +10,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use object_model::event::DictatorEvents;
-use object_model::Recorder;
+use object_model::{Recorder, Transcriber};
 use rtrb::{Consumer};
 use std::time::Duration;
 
@@ -22,13 +22,16 @@ const THRESHOLD: f32 = 0.003; // update the audio threshold as needed
 
 pub struct Engine {
     recorder: Arc<dyn Recorder>,
+    transcriber: Arc<dyn Transcriber>,
     consumer: Mutex<Consumer<f32>>,
+
     flush: AtomicBool
 }
 
 impl Engine {
-    pub fn new(recorder: Arc<dyn Recorder>, consumer: Consumer<f32>) -> Arc<Self> {
+    pub fn new(recorder: Arc<dyn Recorder>, transcriber: Arc<dyn Transcriber>, consumer: Consumer<f32>) -> Arc<Self> {
         let engine = Arc::new(Self {
+            transcriber,
             recorder,
             consumer: Mutex::new(consumer),
             flush: AtomicBool::new(false),
@@ -88,6 +91,14 @@ impl Engine {
 
     fn handle_segment(&self, segment: &[f32]) {
         println!("segment: {:.2}s", segment.len() as u32 / self.recorder.sample_rate());
+
+
+        let resampled: Vec<f32> = segment
+            .chunks_exact(3)
+            .map(|c| c[0] + c[1] + c[2] / 3.0)
+            .collect();
+
+        self.transcriber.transcribe(resampled.as_slice()).expect("failed to transcribe segment");
     }
 }
 
