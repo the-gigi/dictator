@@ -14,10 +14,7 @@ use crate::error::DictatorError;
 pub mod config;
 pub mod error;
 pub mod event;
-pub mod segment;
 
-#[cfg(feature = "fakes")]
-pub mod fakes;
 
 // Traits go here rather than in a `traits.rs`: they are this crate's defining
 // API, and naming a module after a kind of item rather than a domain concept
@@ -36,4 +33,8 @@ pub trait Recorder: Send + Sync {
 
 pub trait Transcriber: Send + Sync {
     fn transcribe(&self, segment: &[f32]) -> Result<String, DictatorError>;
+}
+
+pub trait Injector: Send + Sync {
+    fn inject(&self, text: &str) -> Option<DictatorError>;
 }

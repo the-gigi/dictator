@@ -95,7 +95,7 @@ impl Engine {
 
         let resampled: Vec<f32> = segment
             .chunks_exact(3)
-            .map(|c| c[0] + c[1] + c[2] / 3.0)
+            .map(|c| (c[0] + c[1] + c[2]) / 3.0)
             .collect();
 
         self.transcriber.transcribe(resampled.as_slice()).expect("failed to transcribe segment");

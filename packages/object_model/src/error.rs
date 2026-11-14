@@ -16,7 +16,9 @@ pub enum DictatorError {
     #[error("audio capture failed: {0}")]
     AudioCapture(String),
     #[error("audio transcription failed: {0}")]
-    Transcription(String)
+    Transcription(String),
+    #[error("tet injection failed: {0}")]
+    Injection(String)
 }
 
 pub type Result<T> = std::result::Result<T, DictatorError>;

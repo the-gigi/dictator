@@ -55,7 +55,7 @@ impl Recorder for AudioCapture {
                     self.stream.lock().unwrap().replace(stream);
                 }
                 Err(e) => {
-                    DictatorError::AudioCapture(format!("{:?}", e));
+                    return Some(DictatorError::AudioCapture(format!("{:?}", e)));
                 }
             }
         None
