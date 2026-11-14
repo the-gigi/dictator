@@ -8,6 +8,7 @@ publish.workspace = true
 object_model.workspace = true
 
 cpal.workspace = true
+enigo.workspace = true
 rdev.workspace = true
 rtrb.workspace = true
 whisper-rs.workspace = true

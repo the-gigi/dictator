@@ -25,7 +25,7 @@ pub mod event;
 // Injector      - delivers text to the focused window
 
 pub trait Recorder: Send + Sync {
-    fn record(&self) -> Option<DictatorError>;
+    fn record(&self) -> Result<(), DictatorError>;
     fn stop(&self);
     fn sample_rate(&self) -> u32;
     fn channel_count(&self) -> u16;
@@ -36,5 +36,5 @@ pub trait Transcriber: Send + Sync {
 }
 
 pub trait Injector: Send + Sync {
-    fn inject(&self, text: &str) -> Option<DictatorError>;
+    fn inject(&self, text: &str) -> Result<(), DictatorError>;
 }

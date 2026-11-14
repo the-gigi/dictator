@@ -6,6 +6,7 @@ use platform::dictator_gate::DictationGate;
 use rtrb::RingBuffer;
 use std::time::Duration;
 use platform::audio_transcriber::WhisperTranscriber;
+use platform::text_injector::TextInjector;
 
 // Assumed to match the default mic (48 kHz mono) until we query the device.
 const SAMPLE_RATE_HZ: u32 = 48_000;
@@ -21,7 +22,8 @@ fn main() {
     let (producer, consumer) = RingBuffer::new(ring_slots);
     let recorder = Arc::new(AudioCapture::new(producer));
     let transcriber = Arc::new(WhisperTranscriber::new(whisper_model_path));
-    let engine = Engine::new(recorder.clone(), transcriber, consumer);
+    let injector = Arc::new(TextInjector::new());
+    let engine = Engine::new(recorder.clone(), transcriber, consumer, injector);
     recorder.attach_sink(engine.clone());
     let dictation_gate = DictationGate::new(engine.clone());
 

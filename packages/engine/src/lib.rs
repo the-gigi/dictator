@@ -6,12 +6,12 @@
 
 mod segmenter;
 
-use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
 use object_model::event::DictatorEvents;
-use object_model::{Recorder, Transcriber};
-use rtrb::{Consumer};
+use object_model::{Injector, Recorder, Transcriber};
+use rtrb::Consumer;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
 const DRAIN_INTERVAL: Duration = Duration::from_millis(30);
@@ -24,16 +24,23 @@ pub struct Engine {
     recorder: Arc<dyn Recorder>,
     transcriber: Arc<dyn Transcriber>,
     consumer: Mutex<Consumer<f32>>,
+    injector: Arc<dyn Injector>,
 
-    flush: AtomicBool
+    flush: AtomicBool,
 }
 
 impl Engine {
-    pub fn new(recorder: Arc<dyn Recorder>, transcriber: Arc<dyn Transcriber>, consumer: Consumer<f32>) -> Arc<Self> {
+    pub fn new(
+        recorder: Arc<dyn Recorder>,
+        transcriber: Arc<dyn Transcriber>,
+        consumer: Consumer<f32>,
+        injector: Arc<dyn Injector>,
+    ) -> Arc<Self> {
         let engine = Arc::new(Self {
             transcriber,
             recorder,
             consumer: Mutex::new(consumer),
+            injector,
             flush: AtomicBool::new(false),
         });
 
@@ -44,15 +51,20 @@ impl Engine {
     }
 
     fn run(&self) {
-        let frame_len = (FRAME_DURATION.as_secs_f64() * self.recorder.sample_rate() as f64) as usize;          // samples
-        let padding   = PADDING_DURATION.as_nanos().div_ceil(FRAME_DURATION.as_nanos()) as usize;        // frames
-        let hangover  = HANGOVER_DURATION.as_nanos().div_ceil(FRAME_DURATION.as_nanos()) as usize;       // frames
+        let frame_len =
+            (FRAME_DURATION.as_secs_f64() * self.recorder.sample_rate() as f64) as usize; // samples
+        let padding = PADDING_DURATION
+            .as_nanos()
+            .div_ceil(FRAME_DURATION.as_nanos()) as usize; // frames
+        let hangover = HANGOVER_DURATION
+            .as_nanos()
+            .div_ceil(FRAME_DURATION.as_nanos()) as usize; // frames
         let mut segmenter = segmenter::Segmenter::new(frame_len, padding, hangover, THRESHOLD);
 
         let mut audio: Vec<f32> = Vec::new();
         let mut consumer = self.consumer.lock().unwrap();
         loop {
-            let chunk_size= consumer.slots();
+            let chunk_size = consumer.slots();
             if let Ok(chunk) = consumer.read_chunk(chunk_size) {
                 let (first, second) = chunk.as_slices();
                 audio.extend_from_slice(first);
@@ -90,22 +102,27 @@ impl Engine {
     }
 
     fn handle_segment(&self, segment: &[f32]) {
-        println!("segment: {:.2}s", segment.len() as u32 / self.recorder.sample_rate());
-
+        println!(
+            "segment: {:.2}s",
+            segment.len() as u32 / self.recorder.sample_rate() Okay, how about that? Thank you.
+        );
 
         let resampled: Vec<f32> = segment
             .chunks_exact(3)
             .map(|c| (c[0] + c[1] + c[2]) / 3.0)
             .collect();
 
-        self.transcriber.transcribe(resampled.as_slice()).expect("failed to transcribe segment");
+        match self.transcriber.transcribe(resampled.as_slice()) {
+            Ok(text) => self.injector.inject(text.as_str()).expect("failed to inject text!"),
+            Err(e) => {println!("failed to transcribe audio! {:?}", e)},
+        }
     }
 }
 
 impl DictatorEvents for Engine {
     fn on_start(&self) {
         println!("engine: start");
-        self.recorder.record();
+        self.recorder.record().expect("failed to record recorder");
     }
 
     fn on_stop(&self) {

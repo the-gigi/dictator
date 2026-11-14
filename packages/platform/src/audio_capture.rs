@@ -1,18 +1,18 @@
-use std::sync::{Mutex, Arc};
-use cpal::{Device, Error, StreamConfig, SupportedStreamConfig};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::{Device, Error, StreamConfig, SupportedStreamConfig};
+use std::sync::{Arc, Mutex};
 
+use object_model::Recorder;
 use object_model::error::DictatorError;
 use object_model::event::DictatorEvents;
-use object_model::Recorder;
-use rtrb::{Producer};
+use rtrb::Producer;
 
 pub struct AudioCapture {
     sink: Mutex<Option<Arc<dyn DictatorEvents>>>,
     stream: Mutex<Option<cpal::Stream>>,
     producer: Arc<Mutex<Producer<f32>>>,
     device: Device,
-    config: SupportedStreamConfig
+    config: SupportedStreamConfig,
 }
 
 impl AudioCapture {
@@ -26,7 +26,7 @@ impl AudioCapture {
             stream: Mutex::new(None),
             producer: Arc::from(Mutex::new(producer)),
             device,
-            config
+            config,
         }
     }
 
@@ -36,8 +36,7 @@ impl AudioCapture {
 }
 
 impl Recorder for AudioCapture {
-    fn record(&self) -> Option<DictatorError> {
-
+    fn record(&self) -> Result<(), DictatorError> {
         let config: StreamConfig = self.config.into();
         let producer = Arc::clone(&self.producer);
         let sink = self.sink.lock().unwrap().clone().unwrap();
@@ -49,16 +48,17 @@ impl Recorder for AudioCapture {
                 }
             },
             move |err: Error| sink.on_capture_error(err.message().unwrap()),
-            None) {
-                Ok(stream) => {
-                    stream.play().unwrap();
-                    self.stream.lock().unwrap().replace(stream);
-                }
-                Err(e) => {
-                    return Some(DictatorError::AudioCapture(format!("{:?}", e)));
-                }
+            None,
+        ) {
+            Ok(stream) => {
+                stream.play().unwrap();
+                self.stream.lock().unwrap().replace(stream);
             }
-        None
+            Err(e) => {
+                return Err(DictatorError::AudioCapture(format!("{:?}", e)));
+            }
+        }
+        Ok(())
     }
 
     fn stop(&self) {

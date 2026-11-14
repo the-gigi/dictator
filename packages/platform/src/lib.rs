@@ -8,3 +8,4 @@
 pub mod dictator_gate;
 pub mod audio_capture;
 pub mod audio_transcriber;
+pub mod text_injector;
