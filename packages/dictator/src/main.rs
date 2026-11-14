@@ -1,11 +1,11 @@
 use std::env::args;
 use std::sync::Arc;
 use engine::Engine;
-use platform::audio_capture;
+use platform::audio_capture::AudioCapture;
 use platform::dictator_gate::DictationGate;
 use rtrb::RingBuffer;
 use std::time::Duration;
-use platform::audio_transcriber;
+use platform::audio_transcriber::WhisperTranscriber;
 
 // Assumed to match the default mic (48 kHz mono) until we query the device.
 const SAMPLE_RATE_HZ: u32 = 48_000;
@@ -19,8 +19,8 @@ fn main() {
     // create the platform's TriggerSource
     let ring_slots = RING_SPAN.as_secs() as usize * SAMPLE_RATE_HZ as usize * CHANNELS as usize;
     let (producer, consumer) = RingBuffer::new(ring_slots);
-    let recorder = Arc::new(audio_capture::new(producer));
-    let transcriber = Arc::new(audio_transcriber::new(whisper_model_path));
+    let recorder = Arc::new(AudioCapture::new(producer));
+    let transcriber = Arc::new(WhisperTranscriber::new(whisper_model_path));
     let engine = Engine::new(recorder.clone(), transcriber, consumer);
     recorder.attach_sink(engine.clone());
     let dictation_gate = DictationGate::new(engine.clone());

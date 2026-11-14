@@ -15,22 +15,21 @@ pub struct AudioCapture {
     config: SupportedStreamConfig
 }
 
-pub fn new(producer: Producer<f32>) -> AudioCapture {
-    let host = cpal::default_host();
-    let device = host.default_input_device().unwrap();
-    let config = device.default_input_config().unwrap();
-
-    AudioCapture {
-        sink: Mutex::new(None),
-        stream: Mutex::new(None),
-        producer: Arc::from(Mutex::new(producer)),
-        device,
-        config
-    }
-}
-
-
 impl AudioCapture {
+    pub fn new(producer: Producer<f32>) -> AudioCapture {
+        let host = cpal::default_host();
+        let device = host.default_input_device().unwrap();
+        let config = device.default_input_config().unwrap();
+
+        AudioCapture {
+            sink: Mutex::new(None),
+            stream: Mutex::new(None),
+            producer: Arc::from(Mutex::new(producer)),
+            device,
+            config
+        }
+    }
+
     pub fn attach_sink(&self, sink: Arc<dyn DictatorEvents>) {
         self.sink.lock().unwrap().replace(sink);
     }

@@ -8,22 +8,24 @@ pub struct WhisperTranscriber {
     state: Mutex<WhisperState>
 }
 
-pub fn new(model_path: String) -> WhisperTranscriber {
-    install_logging_hooks();
-    let ctx = WhisperContext::new_with_params(
-        model_path,
-        WhisperContextParameters::default(),
-    ).expect("failed to open whisper model");
-    let state = ctx.create_state().expect("failed to create Whisper state");
-    let state = Mutex::new(state);
-    let params = FullParams::new(SamplingStrategy::BeamSearch {
-        beam_size: 5,
-        patience: -1.0,
-    });
+impl WhisperTranscriber {
+    pub fn new(model_path: String) -> WhisperTranscriber {
+        install_logging_hooks();
+        let ctx = WhisperContext::new_with_params(
+            model_path,
+            WhisperContextParameters::default(),
+        ).expect("failed to open whisper model");
+        let state = ctx.create_state().expect("failed to create Whisper state");
+        let state = Mutex::new(state);
+        let params = FullParams::new(SamplingStrategy::BeamSearch {
+            beam_size: 5,
+            patience: -1.0,
+        });
 
-    WhisperTranscriber {
-        params,
-        state
+        WhisperTranscriber {
+            params,
+            state
+        }
     }
 }
 
