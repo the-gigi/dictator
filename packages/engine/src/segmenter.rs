@@ -98,8 +98,12 @@ impl Segmenter {
         result
     }
 
-    pub fn flush(&mut self) -> Vec<f32> {
-        std::mem::take(&mut self.speech)
+    pub fn flush(&mut self) -> Option<Vec<f32>> {
+        let has_speech = self.has_speech();
+        self.quiet_prefix_count = 0;
+        self.quiet_suffix_count = 0;
+        let speech = std::mem::take(&mut self.speech);
+        return has_speech.then_some(speech);
     }
 }
 

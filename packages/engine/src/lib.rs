@@ -88,7 +88,10 @@ impl Engine {
             audio.drain(..frames * frame_len);
 
             if self.flush.swap(false, Ordering::Acquire) {
-                self.handle_segment(segmenter.flush().as_slice());
+                if let Some(segment) = segmenter.flush() {
+                    self.handle_segment(segment.as_slice());
+                }
+
                 audio.clear();
                 println!("engine: stop");
             }
@@ -104,7 +107,7 @@ impl Engine {
     fn handle_segment(&self, segment: &[f32]) {
         println!(
             "segment: {:.2}s",
-            segment.len() as u32 / self.recorder.sample_rate() Okay, how about that? Thank you.
+            segment.len() as u32 / self.recorder.sample_rate()
         );
 
         let resampled: Vec<f32> = segment
@@ -113,8 +116,13 @@ impl Engine {
             .collect();
 
         match self.transcriber.transcribe(resampled.as_slice()) {
-            Ok(text) => self.injector.inject(text.as_str()).expect("failed to inject text!"),
-            Err(e) => {println!("failed to transcribe audio! {:?}", e)},
+            Ok(text) => self
+                .injector
+                .inject(text.as_str())
+                .expect("failed to inject text!"),
+            Err(e) => {
+                println!("failed to transcribe audio! {:?}", e)
+            }
         }
     }
 }
