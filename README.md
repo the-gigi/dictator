@@ -1,19 +1,21 @@
 # Dictator
 
+<p align="center"><img src="assets/logo.png" alt="Dictator logo" width="400"></p>
+
 General-purpose local voice mode for the focused app.
 
-Hold a hotkey, talk, and the transcribed text streams into whatever window currently holds keyboard focus. Fully local (whisper.cpp via Metal on Apple Silicon), no cloud and no API keys. App-agnostic: it works with any program that accepts typed input.
+Hold **right Option**, talk, and the transcribed text streams into whatever window currently holds keyboard focus. Fully local (whisper.cpp via Metal on Apple Silicon), no cloud and no API keys. App-agnostic: it works with any program that accepts typed input.
 
 ## Status
 
-Early skeleton. Being built live as the companion project to a blog post on The Gigi Zone.
+Works end to end: hold right Option, talk, and each phrase is typed into the focused window as you pause.
 
-## Planned pipeline
+## Pipeline
 
 - Hold-to-talk on **right Option** (`rdev`)
-- Mic capture ([`cpal`](https://docs.rs/cpal/) + `hound`)
+- Mic capture ([`cpal`](https://docs.rs/cpal/))
 - Local speech-to-text (`whisper-rs`, `metal` feature, `ggml-large-v3-turbo`)
-- Inject into the focused window (`enigo` typing by default, `arboard` + synthetic Cmd+V as fallback)
+- Inject into the focused window (`enigo` typing)
 
 Design rule: inject the transcribed text but never auto-press Enter. Voice transcription makes
 mistakes, so the final keystroke stays with the human.
