@@ -25,3 +25,7 @@ models/
 # Env / local secrets
 .env
 .env.local
+
+# Claude Code (local only)
+CLAUDE.md
+.claude/
